@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tourism Portal - Group 9</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+    button { margin: 5px; padding: 8px 12px; }
+    #tourList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 15px; }
+    .tour-card { border: 1px solid #ddd; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🌍 Tourism Management System (Group 9)</h1>
+
+  <!-- Auth -->
+  <div class="section" id="authSection">
+    <h3>Account</h3>
+    <button onclick="showForm('login')">Login</button>
+    <button onclick="showForm('register')">Register</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Login Form -->
+  <div class="section" id="loginForm" style="display:none;">
+    <h3>Login</h3>
+    <input type="email" id="loginEmail" placeholder="Email"><br><br>
+    <input type="password" id="loginPassword" placeholder="Password"><br><br>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <!-- Register Form -->
+  <div class="section" id="registerForm" style="display:none;">
+    <h3>Register</h3>
+    <input type="text" id="regName" placeholder="Full Name"><br><br>
+    <input type="email" id="regEmail" placeholder="Email"><br><br>
+    <input type="password" id="regPassword" placeholder="Password"><br><br>
+    <select id="regRole">
+      <option value="customer">Tourist</option>
+      <option value="guide">Tour Guide</option>
+    </select><br><br>
+    <button onclick="register()">Register</button>
+  </div>
+
+  <!-- Tours -->
+  <div class="section" id="toursSection" style="display:none;">
+    <h2>Available Tours</h2>
+    <div id="tourList"></div>
+  </div>
+
+  <!-- External Services -->
+  <div class="section">
+    <h3>Integrated Services</h3>
+    <button onclick="bookHotel()">🏨 Reserve Hotel Room</button>
+    <button onclick="bookRestaurant()">🍽️ Book Restaurant</button>
+    <button onclick="orderTaxi()">🚕 Order Taxi</button>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    function showForm(type) {
+      document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
+      document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
+    }
+
+    async function login() {
+      const res = await fetch('api/auth/login.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: document.getElementById('loginEmail').value,
+          password: document.getElementById('loginPassword').value
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentUser = data.user;
+        alert('Login successful!');
+        if (currentUser.role === 'guide') {
+          // Could redirect to guide dashboard
+        }
+        loadTours();
+        document.getElementById('toursSection').style.display = 'block';
+      } else {
+        alert(data.message);
+      }
+    }
+
+    async function register() {
+      const res = await fetch('api/auth/register.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          name: document.getElementById('regName').value,
+          email: document.getElementById('regEmail').value,
+          password: document.getElementById('regPassword').value,
+          role: document.getElementById('regRole').value,
+          phone: ''
+        })
+      });
+      const data = await res.json();
+      alert(data.message);
+    }
+
+    async function logout() {
+      await fetch('api/auth/logout.php');
+      currentUser = null;
+      document.getElementById('toursSection').style.display = 'none';
+      alert('Logged out.');
+    }
+
+    async function loadTours() {
+      const res = await fetch('api/tours/get_tours.php');
+      const data = await res.json();
+      if (data.success) {
+        const list = document.getElementById('tourList');
+        list.innerHTML = data.tours.map(t => 
+          `<div class="tour-card">
+            <h4>${t.title}</h4>
+            <p><strong>📍 ${t.location}</strong> | 💰 $${t.price}</p>
+            <p>🕒 ${t.duration}</p>
+            <p>👨‍🏫 Guide: ${t.guide_name}</p>
+            <button onclick="bookTour(${t.id})">Book Tour</button>
+          </div>`
+        ).join('');
+      }
+    }
+
+    async function bookTour(tourId) {
+      if (!currentUser) {
+        alert('Please login first.');
+        return;
+      }
+      // In real system: call your booking API
+      alert(`Tour ${tourId} booked for ${currentUser.name}! (Mock)`);
+    }
+
+    // External service placeholders (to be replaced with real URLs later)
+    function bookHotel() {
+      alert("🏨 Hotel booking service (Group 2/6) – Mock call sent.");
+    }
+    function bookRestaurant() {
+      alert("🍽️ Restaurant booking (Group 3/7) – Mock call sent.");
+    }
+    function orderTaxi() {
+      alert("🚕 Taxi order (Group 4/8) – Mock call sent.");
+    }
+
+    // Load tours on page load (if logged in via session, but we simulate via JS)
+    // In real app, you'd check session via API
+  </script>
+</body>
+</html>

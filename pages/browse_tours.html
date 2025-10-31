@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Browse Tours</title>
+</head>
+<body>
+  <h2>Available Tours</h2>
+  <div id="tours"></div>
+
+  <script>
+  fetch('../api/tours/get_tours.php')
+    .then(res => res.json())
+    .then(data => {
+      let html = '';
+      data.forEach(tour => {
+        html += `
+          <div>
+            <h3>${tour.title}</h3>
+            <p>${tour.description}</p>
+            <p>Location: ${tour.location}</p>
+            <p>Duration: ${tour.duration}</p>
+            <p>Price: ${tour.price} birr</p>
+          </div>
+          <hr>`;
+      });
+      document.getElementById('tours').innerHTML = html;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register</title>
+</head>
+<body>
+  <h2>User Registration</h2>
+  <form id="registerForm">
+    <input type="text" name="name" placeholder="Full Name" required><br><br>
+    <input type="email" name="email" placeholder="Email" required><br><br>
+    <input type="password" name="password" placeholder="Password" required><br><br>
+    <select name="role">
+      <option value="customer">Customer</option>
+      <option value="manager">Manager</option>
+      <option value="admin">Admin</option>
+    </select><br><br>
+    <button type="submit">Register</button>
+  </form>
+
+  <script>
+ document.getElementById('registerForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  
+  fetch('../api/register.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(result => {
+    console.log(result); // for debugging
+    if (result.success) {
+      alert(result.message);
+      window.location.href = "login.html";
+    } else {
+      alert(result.error || "Unknown error");
+    }
+  })
+  .catch(err => alert("Error: " + err));
+});
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Tour</title>
+</head>
+<body>
+  <h2>Add New Tour</h2>
+  <form id="tourForm">
+    <input type="text" name="title" placeholder="Title"><br><br>
+    <input type="text" name="description" placeholder="Description"><br><br>
+    <input type="text" name="location" placeholder="Location"><br><br>
+    <input type="text" name="duration" placeholder="Duration"><br><br>
+    <input type="number" name="price" placeholder="Price"><br><br>
+    <input type="text" name="guide_name" placeholder="Guide Name"><br><br>
+    <button type="submit">Save Tour</button>
+  </form>
+
+  <script>
+  document.getElementById('tourForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    fetch('../api/tours/create_tour.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(result => alert(result.message || result.error));
+  });
+  </script>
+</body>
+</html>

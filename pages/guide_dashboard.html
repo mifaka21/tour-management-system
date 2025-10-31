@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guide Dashboard – Tour Management (Group 9)</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { margin: 0; padding: 20px; background: #f5f7fa; }
+    header { text-align: center; margin-bottom: 25px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #2c3e50; }
+    label { display: block; margin: 8px 0 4px; font-weight: bold; }
+    input, textarea, button { width: 100%; padding: 10px; margin: 5px 0 15px; }
+    textarea { height: 80px; resize: vertical; }
+    button { 
+      background: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; 
+      transition: background 0.3s;
+    }
+    button:hover { background: #2980b9; }
+    .btn-danger { background: #e74c3c; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-warning { background: #f39c12; }
+    .btn-warning:hover { background: #d35400; }
+    .tour-list { display: grid; gap: 15px; }
+    .tour-item { border: 1px solid #eee; padding: 15px; border-radius: 6px; }
+    .tour-title { font-size: 1.2em; margin: 0 0 8px; color: #2c3e50; }
+    .tour-meta { color: #7f8c8d; margin: 5px 0; }
+    .actions { text-align: right; }
+    .actions button { width: auto; padding: 6px 12px; margin-left: 8px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>👨‍🏫 Tour Guide Dashboard</h1>
+      <button onclick="logout()" style="background:#e74c3c;width:auto;">Logout</button>
+    </header>
+
+    <!-- Create Tour Form -->
+    <div class="card">
+      <h2>Create New Tour</h2>
+      <label for="title">Tour Title *</label>
+      <input type="text" id="title" placeholder="e.g., Paris City Tour">
+
+      <label for="location">Location *</label>
+      <input type="text" id="location" placeholder="e.g., Paris, France">
+
+      <label for="duration">Duration *</label>
+      <input type="text" id="duration" placeholder="e.g., 3 days, 2 nights">
+
+      <label for="price">Price ($) *</label>
+      <input type="number" id="price" step="0.01" min="0" placeholder="e.g., 299.99">
+
+      <label for="description">Description</label>
+      <textarea id="description" placeholder="Describe your tour..."></textarea>
+
+      <button onclick="createTour()">➕ Create Tour</button>
+    </div>
+
+    <!-- My Tours List -->
+    <div class="card">
+      <h2>My Tours</h2>
+      <div id="toursContainer" class="tour-list">
+        <p>Loading your tours...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Utility: Show message
+    function showMessage(msg, isError = false) {
+      alert(isError ? "❌ " + msg : "✅ " + msg);
+    }
+
+    // Logout
+    async function logout() {
+      await fetch('../api/auth/logout.php');
+      window.location.href = 'login.html';
+    }
+
+    // Create new tour
+    async function createTour() {
+      const title = document.getElementById('title').value.trim();
+      const location = document.getElementById('location').value.trim();
+      const duration = document.getElementById('duration').value.trim();
+      const price = parseFloat(document.getElementById('price').value);
+      const description = document.getElementById('description').value.trim();
+
+      if (!title || !location || !duration || isNaN(price) || price <= 0) {
+        showMessage("Please fill all required fields with valid data.", true);
+        return;
+      }
+
+      const res = await fetch('../api/tours/create_tour.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, location, duration, price, description })
+      });
+
+      const data = await res.json();
+      showMessage(data.message, !data.success);
+
+      if (data.success) {
+        // Reset form
+        document.getElementById('title').value = '';
+        document.getElementById('location').value = '';
+        document.getElementById('duration').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('description').value = '';
+        loadMyTours(); // Refresh list
+      }
+    }
+
+    // Load guide's tours
+    async function loadMyTours() {
+      const container = document.getElementById('toursContainer');
+      try {
+        const res = await fetch('../api/tours/get_my_tours.php');
+        const data = await res.json();
+
+        if (!data.success) {
+          container.innerHTML = `<p style="color:red;">${data.message}</p>`;
+          return;
+        }
+
+        if (data.tours.length === 0) {
+          container.innerHTML = '<p>You have not created any tours yet.</p>';
+          return;
+        }
+
+        container.innerHTML = data.tours.map(t => `
+          <div class="tour-item">
+            <h3 class="tour-title">${t.title}</h3>
+            <p class="tour-meta">📍 ${t.location} | 💰 $${parseFloat(t.price).toFixed(2)} | 🕒 ${t.duration}</p>
+            <p>${t.description || ''}</p>
+            <p class="tour-meta">👥 Bookings: ${t.booking_count || 0}</p>
+            <div class="actions">
+              <button class="btn-warning" onclick="editTour(${t.id})" disabled>Edit</button>
+              <button class="btn-danger" onclick="deleteTour(${t.id})">Delete</button>
+            </div>
+          </div>
+        `).join('');
+        // Note: Edit is disabled for simplicity; you can implement modal if needed
+      } catch (err) {
+        container.innerHTML = '<p style="color:red;">Failed to load tours.</p>';
+      }
+    }
+
+    // Delete tour
+    async function deleteTour(id) {
+      if (!confirm("Are you sure you want to delete this tour? All bookings will be lost.")) return;
+
+      const res = await fetch('../api/tours/delete_tour.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+
+      const data = await res.json();
+      showMessage(data.message, !data.success);
+      if (data.success) loadMyTours();
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadMyTours);
+  </script>
+</body>
+</html>
